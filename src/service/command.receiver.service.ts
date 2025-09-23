@@ -1,8 +1,11 @@
+import { eventBroker } from "../helpers/event";
+import { CommandParserService } from "./command.parser.service";
 import { SerialPortConnectionService } from "./serialport.connection.service";
 
 export class CommandReceiverService {
     private postDataFound = Buffer.alloc(0);
     private invalidCommand = Buffer.alloc(0);
+    private CommandParser = new CommandParserService();
 
     constructor(
         private SerialConn: SerialPortConnectionService,
@@ -12,7 +15,7 @@ export class CommandReceiverService {
     public init = () => {
         this.SerialConn.getSerialPort()?.on('data', (data) => {
             this.postDataFound = Buffer.concat([this.postDataFound, data]);
-            this.parseCommand();
+            this.processReceivedFrame();
         });
     }
 
@@ -28,7 +31,7 @@ export class CommandReceiverService {
         return sum == checksum;
     }
 
-    private parseCommand = () => {
+    private processReceivedFrame = () => {
         while (this.postDataFound.length > 2) {
             let cmdLen = 255 - this.postDataFound.readInt8(1) & 0x3f;
 
@@ -43,7 +46,13 @@ export class CommandReceiverService {
                     console.error("Invalid Frame received: ", this.invalidCommand);
                     this.invalidCommand = Buffer.alloc(0);
                 }
-                console.log("Valid Frame received: ", current_cmd);
+                try {
+                    // console.log("Valid Frame received: ", current_cmd);
+                    const cmd_data = this.CommandParser.decodeFrame(current_cmd);
+                    eventBroker.emit('command', cmd_data);
+                } catch (error) {
+                    console.error('Error in command decoding ', error);
+                }
 
                 this.postDataFound = this.postDataFound.subarray(cmdLen);
             } else {
