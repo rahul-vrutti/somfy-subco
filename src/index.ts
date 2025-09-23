@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
-import { SerialPortConnectionService } from './service/serialport.connection.service';
-
 import dotenv from 'dotenv';
+import { SerialPortConnectionService } from './service/serialport.connection.service';
 import { MotorDiscoveryService } from './service/motor.discovery.service';
 dotenv.config();
 
@@ -18,7 +17,10 @@ const motorDiscovery = new MotorDiscoveryService();
 
 app.get('/discover', async (req: Request, res: Response) => {
     motorDiscovery.discoverMotors();
-    return res.json({ message: 'Ok' });
+    return res.json({
+        status: true,
+        message: 'Ok'
+    });
 });
 
 app.listen(PORT, async () => {
@@ -41,8 +43,8 @@ app.listen(PORT, async () => {
 
 app.use((req: Request, res: Response) => {
     return res.json({
-        message: 'Welcome to Somfy Subco API',
-        status: 'Server is running successfully!!',
+        status: true,
+        message: 'Welcome to Somfy Subco',
         timestamp: new Date().toISOString()
     });
 });
