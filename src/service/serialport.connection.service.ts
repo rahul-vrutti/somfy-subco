@@ -1,11 +1,11 @@
 import { SerialPort } from "serialport";
-// import { CommandReceiver } from "./command.receiver.service";
+import { CommandReceiverService } from "./command.receiver.service";
 
 let connected_port_name: string | undefined = undefined;
 let serialPortObject: SerialPort | undefined;
 
 export class SerialPortConnectionService {
-    // private CommandReceiver = new CommandReceiver(this);
+    private CommandReceiver = new CommandReceiverService(this);
 
     public getConnectedPort(): string | undefined {
         return connected_port_name;
@@ -44,7 +44,7 @@ export class SerialPortConnectionService {
             serialPortObject.on('open', () => {
                 console.log(`Port ${port} connected successfully.`);
                 connected_port_name = port
-                // this.CommandReceiver.init();
+                this.CommandReceiver.init();
                 return resolve(true);
             });
 
