@@ -47,7 +47,7 @@ export class CommandReceiverService {
                     this.invalidCommand = Buffer.alloc(0);
                 }
                 try {
-                    // console.log("Valid Frame received: ", current_cmd);
+                    console.log("Valid Frame received: ", current_cmd);
                     const cmd_data = this.CommandParser.decodeFrame(current_cmd);
                     eventBroker.emit('command', cmd_data);
                 } catch (error) {

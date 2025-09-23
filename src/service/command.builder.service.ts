@@ -4,9 +4,22 @@ import { CommandBuilderInput, MasterCommand } from "../interface/command.interfa
 export class CommandBuilderService {
 
     private Cmd_Bldr_BuildDataFrame(command_name: string, node_type: number, data: any, sub_node_type?: number): Buffer {
+        if (command_name == 'SET_NETWORK_CONFIG') {
+            let frame = Buffer.alloc(7);
+            frame.writeUInt8(data.brodcast_mode, 0);
+            frame.writeUInt8(data.brodcast_random_value, 1);
+            frame.writeUInt8(data.supervision_active, 2);
+            frame.writeUInt16LE(data.supervision_timeperiod, 3);
+            frame.writeUInt8(data.deaf_mode, 5);
+            frame.writeUInt8(data.upload_requested, 6);
+            return frame;
+        } else if (command_name == 'SET_NODE_DISCOVERY') {
+            let frame = Buffer.alloc(1);
+            frame.writeUInt8(data.discovery_mode, 0);
+            return frame;
+        }
         return Buffer.alloc(0);
     };
-
 
     private Cmd_Bldr_GetCommandIDByName(command_name: string): number {
         const command = MASTER_COMMAND_LIST.find((element: MasterCommand) => {
