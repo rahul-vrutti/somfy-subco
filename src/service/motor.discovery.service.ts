@@ -151,10 +151,22 @@ export class MotorDiscoveryService {
 
         await sleep(2000);
 
-        await getNewMotor();
-        await getNewMotor();
-        await getNewMotor();
-        await getNewMotor();
+        let consecutiveRuns = 0;
+        const maxConsecutiveRuns = 3;
+
+        while (consecutiveRuns < maxConsecutiveRuns) {
+            const initialMotorCount = FOUNDED_MOTORS.length;
+
+            await getNewMotor();
+            consecutiveRuns++;
+
+            if (FOUNDED_MOTORS.length > initialMotorCount) {
+                console.log(`New motor found! Resetting discovery cycle. Found ${FOUNDED_MOTORS.length - initialMotorCount} new motor(s).`);
+                consecutiveRuns = 0;
+            }
+
+            console.log(`Discovery cycle ${consecutiveRuns}/${maxConsecutiveRuns} completed. Total motors found: ${FOUNDED_MOTORS.length}`);
+        }
 
         // for (const motor of FOUNDED_MOTORS) {
         //     const command = {
