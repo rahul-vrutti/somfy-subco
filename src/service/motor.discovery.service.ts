@@ -4,6 +4,7 @@ import { eventBroker } from "../helpers/event";
 import { CommandParserOutput } from "../interface/command.interface";
 import { CommandSenderService } from "./command.sender.service";
 import { CommandBuilderService } from "./command.builder.service";
+import { MotorFound } from "../interface/motor.interface";
 
 let isDiscovering = false;
 
@@ -27,7 +28,7 @@ export class MotorDiscoveryService {
 
         console.log('discoverMotors: Started');
 
-        let FOUNDED_MOTORS: any[] = [];
+        let FOUNDED_MOTORS: MotorFound[] = [];
         isDiscovering = true;
 
         const getNewMotor = async () => {
@@ -50,12 +51,17 @@ export class MotorDiscoveryService {
                         .filter(
                             (record: CommandParserOutput) =>
                                 record.command_name === 'POST_NODE_ADDR' &&
-                                !FOUNDED_MOTORS.some((motor: CommandParserOutput) => motor.source_add === record.source_add)
+                                !FOUNDED_MOTORS.some((motor: MotorFound) => motor.address === record.source_add)
                         )
                         .forEach((record: CommandParserOutput) => {
+                            const new_motor: MotorFound = {
+                                address: record.source_add,
+                                node_type: record.source_node_type,
+                                is_discover_conf_send: false
+                            };
                             // io.emit('motor_discovered', record);
-                            console.log("New Motor Found: ", record.source_add);
-                            FOUNDED_MOTORS.push({ ...record, ack_cmd_send: false });
+                            console.log("New Motor Found: ", new_motor);
+                            FOUNDED_MOTORS.push(new_motor);
                         });
                 }
             });
@@ -63,7 +69,7 @@ export class MotorDiscoveryService {
             await sleep(6000);
 
             for (const motor of FOUNDED_MOTORS) {
-                if (!motor.ack_cmd_send) {
+                if (!motor.is_discover_conf_send) {
                     const command = {
                         command_name: 'SET_NODE_DISCOVERY',
                         data: {
@@ -73,13 +79,13 @@ export class MotorDiscoveryService {
                         ack_timeout: 1500,
                         max_retry_count: 3,
                         priority: 'low' as 'low',
-                        dest_node_type: motor.source_node_type,
-                        sub_node_type: motor.source_node_type == 2 ? 5063313 : undefined,
+                        dest_node_type: motor.node_type,
+                        sub_node_type: motor.node_type == 2 ? 5063313 : undefined,
                         source_add: "010000",
-                        destination_add: motor.source_add,
+                        destination_add: motor.address,
                         event_timeout: 1500
                     };
-                    motor.ack_cmd_send = true;
+                    motor.is_discover_conf_send = true;
                     // Wrap in a promise to wait for ACK before continuing
                     await new Promise<void>((resolve) => {
                         let ackReceived = false;
@@ -87,7 +93,7 @@ export class MotorDiscoveryService {
                             const ack = response.find(
                                 (cmd: any) =>
                                     cmd.command_name === 'ACK' &&
-                                    cmd.destination_add === motor.source_add
+                                    cmd.destination_add === motor.address
                             );
                             if (ack) {
                                 ackReceived = true;
@@ -225,7 +231,7 @@ export class MotorDiscoveryService {
         isDiscovering = false;
 
         console.log('discoverMotors: Completed');
-        // console.log('FOUNDED_MOTORS: ', FOUNDED_MOTORS);
+        console.log('FOUNDED_MOTORS: ', FOUNDED_MOTORS);
 
         return true;
     }
