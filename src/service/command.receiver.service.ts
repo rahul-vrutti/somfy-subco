@@ -2,6 +2,7 @@ import { eventBroker } from "../helpers/event";
 import { CommandParserService } from "./command.parser.service";
 import { SerialPortConnectionService } from "./serialport.connection.service";
 
+let isProcessing = false;
 export class CommandReceiverService {
     private postDataFound = Buffer.alloc(0);
     private invalidCommand = Buffer.alloc(0);
@@ -15,7 +16,9 @@ export class CommandReceiverService {
     public init = () => {
         this.SerialConn.getSerialPort()?.on('data', (data) => {
             this.postDataFound = Buffer.concat([this.postDataFound, data]);
-            this.processReceivedFrame();
+            if (!isProcessing) {
+                this.processReceivedFrame();
+            }
         });
     }
 
@@ -32,10 +35,13 @@ export class CommandReceiverService {
     }
 
     private processReceivedFrame = () => {
+        isProcessing = true;
         while (this.postDataFound.length > 2) {
             let cmdLen = 255 - this.postDataFound.readInt8(1) & 0x3f;
 
             if (cmdLen == 0 && this.postDataFound.length == 0) break;
+
+            if (this.postDataFound.length < cmdLen) break;
 
             const current_cmd = this.postDataFound.subarray(0, cmdLen);
 
@@ -61,5 +67,6 @@ export class CommandReceiverService {
                 this.postDataFound = this.postDataFound.subarray(1);
             }
         }
+        isProcessing = false;
     };
 }
